@@ -1,0 +1,67 @@
+name: KölnHaus 2027 — Free Scrape & Deploy
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Runs automatically every 30 minutes for free on GitHub Actions
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  scrape-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Cologne multi-portal scraper & Signal/Email notifier
+        env:
+          SIGNAL_REST_URL: ${{ secrets.SIGNAL_REST_URL }}
+          SIGNAL_SENDER: ${{ secrets.SIGNAL_SENDER }}
+          SIGNAL_RECIPIENTS: ${{ secrets.SIGNAL_RECIPIENTS }}
+          CALLMEBOT_SIGNAL_PHONE: ${{ secrets.CALLMEBOT_SIGNAL_PHONE }}
+          CALLMEBOT_SIGNAL_KEY: ${{ secrets.CALLMEBOT_SIGNAL_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+          IMMOSCOUT_COOKIE: ${{ secrets.IMMOSCOUT_COOKIE }}
+          WGGESUCHT_COOKIE: ${{ secrets.WGGESUCHT_COOKIE }}
+          KLEINANZEIGEN_COOKIE: ${{ secrets.KLEINANZEIGEN_COOKIE }}
+        run: npm run scrape
+
+      - name: Build static dashboard for GitHub Pages
+        run: npm run build
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy-pages:
+    needs: scrape-and-build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages (Free Hosting)
+        id: deployment
+        uses: actions/deploy-pages@v4
