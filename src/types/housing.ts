@@ -88,6 +88,13 @@ export interface PropertyListing {
   status: PropertyStatus;
   notes: string;
   votes: Record<string, RoommateVote>;
+  /** Provenance & Full-Webpage Snapshot Archival fields */
+  verifiedAt?: string;
+  httpStatus?: number;
+  snapshotUrl?: string;
+  fullDescription?: string;
+  imageUrl?: string;
+  isLiveScraped?: boolean;
 }
 
 export type TodoCategory =

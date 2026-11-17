@@ -36,7 +36,7 @@ import { PortalsAlertsTab } from './components/PortalsAlertsTab';
 
 type TabId = 'screener' | 'todos' | 'loans' | 'syndikat' | 'outreach' | 'portals';
 
-const STORAGE_KEY = 'koelnhaus-2027-state-v1';
+const STORAGE_KEY = 'koelnhaus-2027-state-v2';
 
 interface PersistedState {
   listings: PropertyListing[];
@@ -98,7 +98,7 @@ export function App() {
     }
   }, [listings, todos, portals, alertConfig, activeRoommateId]);
 
-  // Optionally merge any new scraped items from public/data/listings.json (GitHub Actions updates)
+  // Merge fresh scraped properties from public/data/listings.json while keeping user pins/status/notes/votes
   useEffect(() => {
     let cancelled = false;
     fetch('./data/listings.json')
@@ -106,16 +106,28 @@ export function App() {
       .then((feed: { updatedAt?: string; listings?: PropertyListing[] } | null) => {
         if (cancelled || !feed?.listings?.length) return;
         setListings((prev) => {
-          const existingIds = new Set(prev.map((p) => p.id));
-          const fresh = feed.listings!.filter((item) => !existingIds.has(item.id));
-          return fresh.length > 0 ? [...fresh, ...prev] : prev;
+          const prevMap = new Map(prev.map((p) => [p.id, p]));
+          const mergedFeed = feed.listings!.map((liveItem) => {
+            const existing = prevMap.get(liveItem.id);
+            if (!existing) return liveItem;
+            return {
+              ...liveItem,
+              pinned: existing.pinned,
+              status: existing.status,
+              notes: existing.notes,
+              votes: Object.keys(existing.votes || {}).length ? existing.votes : liveItem.votes
+            };
+          });
+          const liveIds = new Set(mergedFeed.map((i) => i.id));
+          const customLocal = prev.filter((p) => p.id.startsWith('custom-') && !liveIds.has(p.id));
+          return [...customLocal, ...mergedFeed];
         });
         if (feed.updatedAt) {
-          setLastSyncedAt(`Feed synced ${feed.updatedAt.slice(0, 16).replace('T', ' ')}`);
+          setLastSyncedAt(`Live Feed Synced ${feed.updatedAt.slice(0, 16).replace('T', ' ')} UTC`);
         }
       })
       .catch(() => {
-        // Offline or local dev without static feed is expected
+        // Offline or local dev without static feed falls back to bundled scrapedSeed.json
       });
     return () => {
       cancelled = true;

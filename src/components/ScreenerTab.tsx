@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
+  FileText,
   Filter,
   Flag,
   Home,
@@ -17,6 +18,7 @@ import {
   Pin,
   Plus,
   RotateCcw,
+  ShieldCheck,
   Sparkles,
   ThumbsDown,
   ThumbsUp,
@@ -58,12 +60,12 @@ const DEFAULT_FILTERS: ScreenerFilters = {
   searchText: '',
   mode: 'all',
   quickFilter: 'all',
-  maxMonthlyPerPerson: 950,
-  minTotalRooms: 4.5,
-  minAiBedrooms: 5,
-  minBathrooms: 1.5,
-  minSqm: 140,
-  maxSingleCommuteMins: 45,
+  maxMonthlyPerPerson: 1500,
+  minTotalRooms: 4,
+  minAiBedrooms: 4,
+  minBathrooms: 1,
+  minSqm: 110,
+  maxSingleCommuteMins: 50,
   hideCommuteFlagged: false,
   requireGarden: false,
   requireWgFriendly: false,
@@ -108,6 +110,8 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
   const [todoDraftTitle, setTodoDraftTitle] = useState('');
   const [todoDraftAssignee, setTodoDraftAssignee] = useState(activeRoommateId);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [snapshotListing, setSnapshotListing] = useState<PropertyListing | null>(null);
+  const [snapshotViewMode, setSnapshotViewMode] = useState<'iframe' | 'reader'>('iframe');
 
   // Import modal form state
   const [newTitle, setNewTitle] = useState('');
@@ -423,8 +427,8 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
               <input
                 type="range"
                 min={350}
-                max={1000}
-                step={25}
+                max={3000}
+                step={50}
                 value={filters.maxMonthlyPerPerson}
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, maxMonthlyPerPerson: Number(e.target.value) }))
@@ -497,6 +501,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   }
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
                 >
+                  <option value={4}>4+ Bedrooms</option>
                   <option value={5}>5+ Bedrooms</option>
                   <option value={6}>6+ Bedrooms (Exact Fit)</option>
                   <option value={7}>7+ Bedrooms</option>
@@ -525,6 +530,8 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   onChange={(e) => setFilters((f) => ({ ...f, minSqm: Number(e.target.value) }))}
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
                 >
+                  <option value={100}>100+ m²</option>
+                  <option value={110}>110+ m²</option>
                   <option value={120}>120+ m²</option>
                   <option value={140}>140+ m²</option>
                   <option value={170}>170+ m²</option>
@@ -776,17 +783,45 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                         <option value="archived">Status: Archived</option>
                       </select>
 
+                      <button
+                        onClick={() => {
+                          setSnapshotListing(item);
+                          setSnapshotViewMode(item.snapshotUrl ? 'iframe' : 'reader');
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold shadow-sm"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>View Full Webpage Copy</span>
+                      </button>
+
                       <a
                         href={item.portalUrl}
                         target="_blank"
                         rel="noopener noreferrer"
+                        title={
+                          item.verifiedAt
+                            ? `Verified HTTP ${item.httpStatus ?? 200} on ${item.verifiedAt.slice(0, 10)}`
+                            : 'Open external source URL'
+                        }
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700"
                       >
-                        <span>Original Ad</span>
+                        <span>Live Source</span>
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     </div>
                   </div>
+
+                  {/* Verification Provenance Strip */}
+                  {item.isLiveScraped && (
+                    <div className="mt-2 inline-flex flex-wrap items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-950/40 border border-emerald-500/25 text-[11px] text-emerald-300">
+                      <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                      <span>
+                        Verified Live Ad (HTTP {item.httpStatus ?? 200}) • Published:{' '}
+                        <strong>{item.publishedAt}</strong> • Snapshot captured:{' '}
+                        {item.verifiedAt?.slice(0, 16).replace('T', ' ')} UTC
+                      </span>
+                    </div>
+                  )}
 
                   {/* Specs & Pricing Strip */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 my-4 p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
@@ -1252,6 +1287,135 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Full Webpage Archived Copy & Exposé Reader Modal */}
+      {snapshotListing && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-slate-800 bg-slate-950">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 text-xs text-emerald-300">
+                  <ShieldCheck className="w-4 h-4 shrink-0" />
+                  <span className="font-semibold">
+                    Archived Full Webpage Copy — {snapshotListing.portal}
+                  </span>
+                  {snapshotListing.verifiedAt && (
+                    <span className="text-slate-400">
+                      • Captured {snapshotListing.verifiedAt.slice(0, 16).replace('T', ' ')} UTC
+                    </span>
+                  )}
+                </div>
+                <h4 className="text-sm font-bold text-white truncate mt-0.5">
+                  {snapshotListing.title}
+                </h4>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+                  {snapshotListing.snapshotUrl && (
+                    <button
+                      onClick={() => setSnapshotViewMode('iframe')}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition ${
+                        snapshotViewMode === 'iframe'
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      Rendered Webpage Copy
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setSnapshotViewMode('reader')}
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition ${
+                      snapshotViewMode === 'reader'
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    Clean Exposé & Evidence
+                  </button>
+                </div>
+
+                <a
+                  href={snapshotListing.portalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-sky-300 border border-slate-700"
+                >
+                  <span>Original URL</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+
+                <button
+                  onClick={() => setSnapshotListing(null)}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-hidden bg-slate-950">
+              {snapshotViewMode === 'iframe' && snapshotListing.snapshotUrl ? (
+                <iframe
+                  title={snapshotListing.title}
+                  src={snapshotListing.snapshotUrl}
+                  sandbox="allow-same-origin"
+                  className="w-full h-full bg-white border-0"
+                />
+              ) : (
+                <div className="h-full overflow-y-auto p-6 max-w-4xl mx-auto space-y-5">
+                  {snapshotListing.imageUrl && (
+                    <img
+                      src={snapshotListing.imageUrl}
+                      alt={snapshotListing.title}
+                      className="w-full max-h-80 object-cover rounded-xl border border-slate-800"
+                    />
+                  )}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+                    <div>
+                      <div className="text-slate-400">Portal & ID</div>
+                      <div className="text-white font-semibold">
+                        {snapshotListing.portal} ({snapshotListing.id})
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-slate-400">Price / Kaltmiete</div>
+                      <div className="text-white font-bold">
+                        {formatEUR(snapshotListing.basePriceOrColdRent)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-slate-400">Size & Rooms</div>
+                      <div className="text-white font-semibold">
+                        {snapshotListing.livingSpaceSqm} m² • {snapshotListing.listedRooms} Zi
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-slate-400">Published / Verified</div>
+                      <div className="text-emerald-300 font-semibold">
+                        {snapshotListing.publishedAt} (HTTP {snapshotListing.httpStatus ?? 200})
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <div className="text-xs font-semibold text-indigo-300 uppercase">
+                      Extracted Full Description & Specs
+                    </div>
+                    <p className="text-sm text-slate-200 whitespace-pre-line leading-relaxed">
+                      {snapshotListing.fullDescription || snapshotListing.aiSummary}
+                    </p>
+                    <div className="text-xs text-slate-400 pt-2 border-t border-slate-800">
+                      Specs: {snapshotListing.aiFloorplanInsight}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
