@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Bell,
   Calculator,
   CheckSquare,
+  Cloud,
   Handshake,
   Home,
+  Lock,
   Sparkles,
   Users
 } from 'lucide-react';
@@ -33,6 +35,7 @@ import { LoanCalculatorTab } from './components/LoanCalculatorTab';
 import { SyndikatTab } from './components/SyndikatTab';
 import { OutreachTab } from './components/OutreachTab';
 import { PortalsAlertsTab } from './components/PortalsAlertsTab';
+import { PasswordGate } from './components/PasswordGate';
 
 type TabId = 'screener' | 'todos' | 'loans' | 'syndikat' | 'outreach' | 'portals';
 
@@ -81,8 +84,111 @@ export function App() {
   const [activeRoommateId, setActiveRoommateId] = useState<string>(initial.activeRoommateId);
   const [selectedPropertyForTool, setSelectedPropertyForTool] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<string>('Local + GitHub Feed Ready');
+  const [serverMode, setServerMode] = useState<boolean>(false);
+  const [sessionStatus, setSessionStatus] = useState<'checking' | 'locked' | 'ready'>('checking');
 
-  // Persist shared workspace locally
+  const syncInitializedRef = useRef(false);
+  const suppressNextPushRef = useRef(false);
+
+  const mergeScrapedFeed = useCallback(
+    (baseListings: PropertyListing[], scraped: PropertyListing[]) => {
+      if (!scraped?.length) return baseListings;
+      const baseMap = new Map(baseListings.map((p) => [p.id, p]));
+      const merged = scraped.map((liveItem) => {
+        const existing = baseMap.get(liveItem.id);
+        if (!existing) return liveItem;
+        return {
+          ...liveItem,
+          pinned: existing.pinned,
+          status: existing.status,
+          notes: existing.notes,
+          votes: Object.keys(existing.votes || {}).length ? existing.votes : liveItem.votes
+        };
+      });
+      const liveIds = new Set(merged.map((i) => i.id));
+      const custom = baseListings.filter((p) => p.id.startsWith('custom-') && !liveIds.has(p.id));
+      return [...custom, ...merged];
+    },
+    []
+  );
+
+  const loadServerState = useCallback(async () => {
+    const res = await fetch('./api/state', { cache: 'no-store' });
+    if (res.status === 401) {
+      setSessionStatus('locked');
+      return;
+    }
+    if (!res.ok) return;
+    const data = (await res.json()) as {
+      listings?: PropertyListing[];
+      todos?: TodoItem[];
+      portals?: PortalSource[];
+      alertConfig?: AlertConfig;
+      scrapedListings?: PropertyListing[];
+      serverUpdatedAt?: string;
+    };
+    suppressNextPushRef.current = true;
+    const baseListings = data.listings?.length ? data.listings : INITIAL_LISTINGS;
+    const mergedListings = mergeScrapedFeed(baseListings, data.scrapedListings ?? []);
+    setListings(mergedListings);
+    if (data.todos?.length) setTodos(data.todos);
+    if (data.portals?.length) setPortals(data.portals);
+    if (data.alertConfig) setAlertConfig(data.alertConfig);
+    setLastSyncedAt(
+      data.serverUpdatedAt
+        ? `Cloud Sync ${data.serverUpdatedAt.slice(0, 16).replace('T', ' ')} UTC`
+        : 'Shared Server Sync Active'
+    );
+    syncInitializedRef.current = true;
+    setSessionStatus('ready');
+  }, [mergeScrapedFeed]);
+
+  // Detect Cloud Run / self-hosted server vs static GitHub Pages on boot
+  useEffect(() => {
+    let cancelled = false;
+    fetch('./api/session', { cache: 'no-store' })
+      .then(async (res) => {
+        if (cancelled) return;
+        const ct = res.headers.get('content-type') || '';
+        if (!res.ok || !ct.includes('application/json')) {
+          setServerMode(false);
+          setSessionStatus('ready');
+          return;
+        }
+        const session = (await res.json()) as { serverMode?: boolean; authenticated?: boolean };
+        if (session.serverMode) {
+          setServerMode(true);
+          if (session.authenticated) {
+            await loadServerState();
+          } else {
+            setSessionStatus('locked');
+          }
+        } else {
+          setServerMode(false);
+          setSessionStatus('ready');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setServerMode(false);
+          setSessionStatus('ready');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadServerState]);
+
+  // Poll shared server every 15s so all roommates' machines stay in sync
+  useEffect(() => {
+    if (!serverMode || sessionStatus !== 'ready') return;
+    const timer = setInterval(() => {
+      loadServerState().catch(() => {});
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [serverMode, sessionStatus, loadServerState]);
+
+  // Persist locally AND push to shared server when in serverMode
   useEffect(() => {
     try {
       const payload: PersistedState = {
@@ -96,43 +202,48 @@ export function App() {
     } catch {
       // Ignore storage quota errors
     }
-  }, [listings, todos, portals, alertConfig, activeRoommateId]);
 
-  // Merge fresh scraped properties from public/data/listings.json while keeping user pins/status/notes/votes
+    if (!serverMode || sessionStatus !== 'ready' || !syncInitializedRef.current) return;
+    if (suppressNextPushRef.current) {
+      suppressNextPushRef.current = false;
+      return;
+    }
+
+    const handle = setTimeout(() => {
+      fetch('./api/state', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listings, todos, portals, alertConfig })
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((res: { serverUpdatedAt?: string } | null) => {
+          if (res?.serverUpdatedAt) {
+            setLastSyncedAt(`Cloud Sync ${res.serverUpdatedAt.slice(0, 16).replace('T', ' ')} UTC`);
+          }
+        })
+        .catch(() => {});
+    }, 450);
+    return () => clearTimeout(handle);
+  }, [listings, todos, portals, alertConfig, activeRoommateId, serverMode, sessionStatus]);
+
+  // Static mode fallback: merge ./data/listings.json when not running behind server/index.mjs
   useEffect(() => {
+    if (serverMode || sessionStatus !== 'ready') return;
     let cancelled = false;
     fetch('./data/listings.json')
       .then((res) => (res.ok ? res.json() : null))
       .then((feed: { updatedAt?: string; listings?: PropertyListing[] } | null) => {
         if (cancelled || !feed?.listings?.length) return;
-        setListings((prev) => {
-          const prevMap = new Map(prev.map((p) => [p.id, p]));
-          const mergedFeed = feed.listings!.map((liveItem) => {
-            const existing = prevMap.get(liveItem.id);
-            if (!existing) return liveItem;
-            return {
-              ...liveItem,
-              pinned: existing.pinned,
-              status: existing.status,
-              notes: existing.notes,
-              votes: Object.keys(existing.votes || {}).length ? existing.votes : liveItem.votes
-            };
-          });
-          const liveIds = new Set(mergedFeed.map((i) => i.id));
-          const customLocal = prev.filter((p) => p.id.startsWith('custom-') && !liveIds.has(p.id));
-          return [...customLocal, ...mergedFeed];
-        });
+        setListings((prev) => mergeScrapedFeed(prev, feed.listings!));
         if (feed.updatedAt) {
           setLastSyncedAt(`Live Feed Synced ${feed.updatedAt.slice(0, 16).replace('T', ' ')} UTC`);
         }
       })
-      .catch(() => {
-        // Offline or local dev without static feed falls back to bundled scrapedSeed.json
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [serverMode, sessionStatus, mergeScrapedFeed]);
 
   const activeRoommate =
     INITIAL_ROOMMATES.find((r) => r.id === activeRoommateId) ?? INITIAL_ROOMMATES[0];
@@ -277,6 +388,24 @@ export function App() {
     }
   ];
 
+  if (sessionStatus === 'checking') {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center text-sm">
+        Connecting to KölnHaus 2027 workspace...
+      </div>
+    );
+  }
+
+  if (sessionStatus === 'locked') {
+    return (
+      <PasswordGate
+        onUnlocked={() => {
+          loadServerState().catch(() => {});
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Top Navbar */}
@@ -324,6 +453,24 @@ export function App() {
             >
               Commute target: {activeRoommate.destinationName} (≤{activeRoommate.maxCommuteMins}m)
             </span>
+
+            {serverMode && (
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-medium">
+                  <Cloud className="w-3.5 h-3.5" /> Live Sync
+                </span>
+                <button
+                  onClick={() => {
+                    fetch('./api/logout', { method: 'POST' }).then(() =>
+                      setSessionStatus('locked')
+                    );
+                  }}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] border border-slate-700"
+                >
+                  <Lock className="w-3 h-3" /> Lock
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

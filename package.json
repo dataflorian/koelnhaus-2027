@@ -9,6 +9,7 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
+    "start:server": "node server/index.mjs",
     "scrape": "node scripts/scrape-and-notify.mjs",
     "scrape:dry": "node scripts/scrape-and-notify.mjs --dry-run"
   },
