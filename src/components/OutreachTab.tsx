@@ -11,8 +11,10 @@ import {
 } from 'lucide-react';
 import { PropertyListing, RoommateProfile } from '../types/housing';
 import { formatEUR } from '../utils/housingMath';
+import { Lang, TRANSLATIONS } from '../i18n/translations';
 
 interface OutreachTabProps {
+  lang: Lang;
   listings: PropertyListing[];
   roommates: RoommateProfile[];
   selectedPropertyId: string | null;
@@ -26,11 +28,13 @@ type PitchStrategy =
   | 'buy-syndikat-direct';
 
 export const OutreachTab: React.FC<OutreachTabProps> = ({
+  lang,
   listings,
   roommates,
   selectedPropertyId,
   onSelectPropertyId
 }) => {
+  const t = TRANSLATIONS[lang].outreach;
   const selectedProperty = useMemo(
     () => listings.find((l) => l.id === selectedPropertyId) ?? listings[0],
     [listings, selectedPropertyId]
@@ -138,12 +142,12 @@ export const OutreachTab: React.FC<OutreachTabProps> = ({
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-indigo-400" />
-              AI Application & Buyer Pitch Studio
+              {t.title}
             </h2>
 
             <div>
               <label className="block text-xs text-slate-400 mb-1">
-                Target Property from Screener
+                {t.targetProp}
               </label>
               <select
                 value={selectedProperty?.id ?? ''}
@@ -172,13 +176,13 @@ export const OutreachTab: React.FC<OutreachTabProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Outreach Template</label>
+              <label className="block text-xs text-slate-400 mb-1.5">{t.templateLabel}</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {[
-                  { id: 'rent-landlord', label: 'Private Landlord (Rent)' },
-                  { id: 'rent-wg-takeover', label: 'WG-Gesucht Takeover' },
-                  { id: 'buy-broker-expose', label: 'Buyer / Broker Exposé' },
-                  { id: 'buy-syndikat-direct', label: 'Syndikat / Direct Seller' }
+                  { id: 'rent-landlord', label: t.tplRentLandlord },
+                  { id: 'rent-wg-takeover', label: t.tplWgTakeover },
+                  { id: 'buy-broker-expose', label: t.tplBuyBroker },
+                  { id: 'buy-syndikat-direct', label: t.tplBuySyndikat }
                 ].map((opt) => (
                   <button
                     key={opt.id}
@@ -203,7 +207,7 @@ export const OutreachTab: React.FC<OutreachTabProps> = ({
                   onChange={(e) => setEmphasizeJointLiability(e.target.checked)}
                   className="rounded border-slate-600 bg-slate-800"
                 />
-                <span>Highlight 5x Full-Time Income + Joint Liability</span>
+                <span>{t.optIncome}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -212,7 +216,7 @@ export const OutreachTab: React.FC<OutreachTabProps> = ({
                   onChange={(e) => setIncludeElternbuergschaft(e.target.checked)}
                   className="rounded border-slate-600 bg-slate-800"
                 />
-                <span>Mention Elternbürgschaft for Florian (Student)</span>
+                <span>{t.optBuergschaft}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -221,19 +225,19 @@ export const OutreachTab: React.FC<OutreachTabProps> = ({
                   onChange={(e) => setEmphasizeGardenMaintenance(e.target.checked)}
                   className="rounded border-slate-600 bg-slate-800"
                 />
-                <span>Include House & Garden Upkeep Assurance</span>
+                <span>{t.optGarden}</span>
               </label>
             </div>
 
             <div>
               <label className="block text-xs text-slate-400 mb-1">
-                Optional Custom Personal Detail from Ad
+                {t.customHookLabel}
               </label>
               <input
                 type="text"
                 value={customHook}
                 onChange={(e) => setCustomHook(e.target.value)}
-                placeholder="e.g., Die helle Souterrain-Einliegerwohnung und der Südgarten..."
+                placeholder={t.customHookPlaceholder}
                 className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
               />
             </div>
@@ -243,17 +247,17 @@ export const OutreachTab: React.FC<OutreachTabProps> = ({
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-3">
             <h3 className="text-sm font-semibold text-white flex items-center gap-2">
               <FileText className="w-4 h-4 text-emerald-400" />
-              Digital Bewerbungsmappe & Group Strength
+              {t.dossierTitle}
             </h3>
             <div className="grid grid-cols-2 gap-2.5 text-xs">
               <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                <div className="text-slate-400">Combined Net Income</div>
+                <div className="text-slate-400">{t.combinedNet}</div>
                 <div className="text-base font-bold text-emerald-400">
                   {formatEUR(combinedMonthlyNet)}/mo
                 </div>
               </div>
               <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                <div className="text-slate-400">Available Equity Pool</div>
+                <div className="text-slate-400">{t.equityPool}</div>
                 <div className="text-base font-bold text-sky-400">
                   {formatEUR(totalEquity)}
                 </div>
@@ -275,7 +279,13 @@ export const OutreachTab: React.FC<OutreachTabProps> = ({
                   </div>
                   <div className="text-[11px] text-emerald-300 flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" />
-                    {rm.hasParentGuarantor ? 'Elternbürgschaft + SCHUFA' : '3x Payslips + SCHUFA'}
+                    {rm.hasParentGuarantor
+                      ? lang === 'de'
+                        ? 'Elternbürgschaft + SCHUFA'
+                        : 'Elternbürgschaft + SCHUFA'
+                      : lang === 'de'
+                        ? '3x Gehalt + SCHUFA'
+                        : '3x Payslips + SCHUFA'}
                   </div>
                 </div>
               ))}
@@ -289,7 +299,7 @@ export const OutreachTab: React.FC<OutreachTabProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                Ready-to-Send German Message (Anti-Ban Human-in-the-Loop)
+                {t.readyPitchTitle}
               </h3>
               <div className="flex items-center gap-2">
                 <button
@@ -297,7 +307,7 @@ export const OutreachTab: React.FC<OutreachTabProps> = ({
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium"
                 >
                   {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copied ? 'Copied!' : 'Copy Subject + Text'}</span>
+                  <span>{copied ? t.copied : t.copyBtn}</span>
                 </button>
                 {mailtoUrl && (
                   <a
@@ -305,14 +315,14 @@ export const OutreachTab: React.FC<OutreachTabProps> = ({
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium"
                   >
                     <Mail className="w-3.5 h-3.5" />
-                    <span>Open in Email App</span>
+                    <span>{t.openEmailBtn}</span>
                   </a>
                 )}
               </div>
             </div>
 
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-              <div className="text-slate-400 mb-1">Betreff (Subject):</div>
+              <div className="text-slate-400 mb-1">{t.subjectLabel}</div>
               <div className="text-white font-semibold">{generatedPitch.subject}</div>
             </div>
 
@@ -322,9 +332,7 @@ export const OutreachTab: React.FC<OutreachTabProps> = ({
           </div>
 
           <div className="text-[11px] text-slate-400 border-t border-slate-800 pt-3">
-            Why 1-click review beats blind auto-sending: German landlords and brokers penalize
-            robotic bot spam and ImmoScout24 bans accounts using unthrottled form auto-submitters.
-            Review, copy, or send via email in under 10 seconds with full personalization.
+            {t.antiBanTip}
           </div>
         </div>
       </div>

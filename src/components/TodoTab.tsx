@@ -17,8 +17,10 @@ import {
   TodoItem,
   TodoStatus
 } from '../types/housing';
+import { Lang, TRANSLATIONS } from '../i18n/translations';
 
 interface TodoTabProps {
+  lang: Lang;
   todos: TodoItem[];
   listings: PropertyListing[];
   roommates: RoommateProfile[];
@@ -40,6 +42,7 @@ const CATEGORY_BADGES: Record<TodoCategory, { label: string; color: string }> = 
 };
 
 export const TodoTab: React.FC<TodoTabProps> = ({
+  lang,
   todos,
   listings,
   roommates,
@@ -48,6 +51,15 @@ export const TodoTab: React.FC<TodoTabProps> = ({
   onUpdateTodoStatus,
   onDeleteTodo
 }) => {
+  const tr = TRANSLATIONS[lang].todos;
+  const allRoommatesLabel = TRANSLATIONS[lang].screener.all6Roommates;
+  const catLabelMap: Record<TodoCategory, string> = {
+    property: tr.catProperty,
+    application: tr.catApplication,
+    financing: tr.catFinancing,
+    syndikat: tr.catSyndikat,
+    'roadmap-expansion': tr.catExpansion
+  };
   const [filterCategory, setFilterCategory] = useState<'all' | TodoCategory>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | TodoStatus>('all');
   const [filterAssignee, setFilterAssignee] = useState<string>('all');
@@ -119,10 +131,10 @@ export const TodoTab: React.FC<TodoTabProps> = ({
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold text-white flex items-center gap-2">
               <Pin className="w-4 h-4 text-amber-400" />
-              Active Shortlist (Pinned & Contacted Properties)
+              {tr.activeShortlist}
             </h2>
             <span className="text-xs text-slate-400">
-              {pinnedOrContactedProperties.length} properties tracked
+              {pinnedOrContactedProperties.length} {tr.trackedSuffix}
             </span>
           </div>
 
@@ -152,9 +164,8 @@ export const TodoTab: React.FC<TodoTabProps> = ({
                       setCategory('property');
                     }}
                     className="shrink-0 px-2 py-1 rounded bg-slate-800 hover:bg-indigo-600 text-[11px] text-slate-200 transition"
-                    title="Select this property in the New Task form"
                   >
-                    {linkedCount} open
+                    {linkedCount} {tr.openSuffix}
                   </button>
                 </div>
               );
@@ -164,17 +175,17 @@ export const TodoTab: React.FC<TodoTabProps> = ({
 
         <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between space-y-3">
           <div>
-            <div className="text-xs text-slate-400">Group Progress</div>
+            <div className="text-xs text-slate-400">{tr.groupProgress}</div>
             <div className="text-2xl font-bold text-white mt-1">
-              {counts.open} Open{' '}
-              <span className="text-sm font-normal text-emerald-400">({counts.done} Done)</span>
+              {counts.open} {tr.openWord}{' '}
+              <span className="text-sm font-normal text-emerald-400">({counts.done} {tr.doneWord})</span>
             </div>
           </div>
           <div className="p-3 rounded-xl bg-fuchsia-950/30 border border-fuchsia-500/30 text-xs text-fuchsia-200">
             <div className="font-semibold flex items-center gap-1.5 mb-1">
-              <Layers className="w-3.5 h-3.5" /> Future Expansion Backlog ({counts.expansion})
+              <Layers className="w-3.5 h-3.5" /> {tr.expansionTitle} ({counts.expansion})
             </div>
-            Includes live mortgage-rate scraping (Interhyp/Dr. Klein/KfW), Direktkredit pledge tracking, and portal session upgrades.
+            {tr.expansionDesc}
           </div>
         </div>
       </div>
@@ -187,7 +198,7 @@ export const TodoTab: React.FC<TodoTabProps> = ({
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-white flex items-center gap-2">
             <Plus className="w-4 h-4 text-indigo-400" />
-            Add Shared Task or Property Follow-Up (Posting as {activeRoommateName})
+            {tr.addTaskTitle} ({activeRoommateName})
           </h3>
         </div>
 
@@ -198,7 +209,7 @@ export const TodoTab: React.FC<TodoTabProps> = ({
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Call KSK-Immobilien about Klettenberg floorplan..."
+              placeholder={tr.taskPlaceholder}
               className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
             />
           </div>
@@ -208,11 +219,11 @@ export const TodoTab: React.FC<TodoTabProps> = ({
               onChange={(e) => setCategory(e.target.value as TodoCategory)}
               className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white"
             >
-              <option value="property">Property Task</option>
-              <option value="application">Bewerbungsmappe</option>
-              <option value="financing">Financing / Credit</option>
-              <option value="syndikat">Syndikat / Legal</option>
-              <option value="roadmap-expansion">Tool Expansion</option>
+              <option value="property">{tr.catProperty}</option>
+              <option value="application">{tr.catApplication}</option>
+              <option value="financing">{tr.catFinancing}</option>
+              <option value="syndikat">{tr.catSyndikat}</option>
+              <option value="roadmap-expansion">{tr.catExpansion}</option>
             </select>
           </div>
           <div className="md:col-span-2">
@@ -221,7 +232,7 @@ export const TodoTab: React.FC<TodoTabProps> = ({
               onChange={(e) => setAssignedTo(e.target.value)}
               className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white"
             >
-              <option value="All">All 6 Roommates</option>
+              <option value="All">{allRoommatesLabel}</option>
               {roommates.map((rm) => (
                 <option key={rm.id} value={rm.id}>
                   {rm.name}
@@ -235,7 +246,7 @@ export const TodoTab: React.FC<TodoTabProps> = ({
               onChange={(e) => setLinkedPropertyId(e.target.value)}
               className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white"
             >
-              <option value="">No Linked Property (General)</option>
+              <option value="">{tr.noLinkedProp}</option>
               {listings.map((l) => (
                 <option key={l.id} value={l.id}>
                   [{l.veedel}] {l.title.slice(0, 38)}...
@@ -251,7 +262,7 @@ export const TodoTab: React.FC<TodoTabProps> = ({
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional notes, contact context, or checklist details..."
+              placeholder={tr.notesPlaceholder}
               className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500"
             />
           </div>
@@ -261,9 +272,9 @@ export const TodoTab: React.FC<TodoTabProps> = ({
               onChange={(e) => setPriority(e.target.value as 'high' | 'medium' | 'low')}
               className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
             >
-              <option value="high">Priority: High</option>
-              <option value="medium">Priority: Medium</option>
-              <option value="low">Priority: Low</option>
+              <option value="high">{tr.prioHigh}</option>
+              <option value="medium">{tr.prioMed}</option>
+              <option value="low">{tr.prioLow}</option>
             </select>
           </div>
           <div className="md:col-span-2">
@@ -279,7 +290,7 @@ export const TodoTab: React.FC<TodoTabProps> = ({
               type="submit"
               className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg px-4 py-2 transition"
             >
-              + Add Task
+              {tr.addBtn}
             </button>
           </div>
         </div>
@@ -289,12 +300,12 @@ export const TodoTab: React.FC<TodoTabProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1.5">
           {[
-            { id: 'all', label: 'All Categories' },
-            { id: 'property', label: '🏠 Property Tasks' },
-            { id: 'application', label: '📄 Application Dossier' },
-            { id: 'financing', label: '💶 Financing' },
-            { id: 'syndikat', label: '🤝 Syndikat' },
-            { id: 'roadmap-expansion', label: '🚀 Tool Expansion Roadmap' }
+            { id: 'all', label: tr.filterAllCat },
+            { id: 'property', label: `🏠 ${tr.filterProperty}` },
+            { id: 'application', label: `📄 ${tr.filterApplication}` },
+            { id: 'financing', label: `💶 ${tr.filterFinancing}` },
+            { id: 'syndikat', label: `🤝 ${tr.filterSyndikat}` },
+            { id: 'roadmap-expansion', label: `🚀 ${tr.filterExpansion}` }
           ].map((c) => (
             <button
               key={c.id}
@@ -316,10 +327,10 @@ export const TodoTab: React.FC<TodoTabProps> = ({
             onChange={(e) => setFilterStatus(e.target.value as 'all' | TodoStatus)}
             className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
           >
-            <option value="all">All Statuses</option>
-            <option value="todo">To Do</option>
-            <option value="in-progress">In Progress</option>
-            <option value="done">Completed</option>
+            <option value="all">{tr.allStatuses}</option>
+            <option value="todo">{tr.statusTodo}</option>
+            <option value="in-progress">{tr.statusInProgress}</option>
+            <option value="done">{tr.statusDone}</option>
           </select>
 
           <select
@@ -327,7 +338,7 @@ export const TodoTab: React.FC<TodoTabProps> = ({
             onChange={(e) => setFilterAssignee(e.target.value)}
             className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
           >
-            <option value="all">All Assignees</option>
+            <option value="all">{tr.allAssignees}</option>
             {roommates.map((rm) => (
               <option key={rm.id} value={rm.id}>
                 {rm.name}
@@ -346,7 +357,7 @@ export const TodoTab: React.FC<TodoTabProps> = ({
             : undefined;
           const assignee =
             todo.assignedTo === 'All'
-              ? 'All 6 Roommates'
+              ? allRoommatesLabel
               : roommates.find((r) => r.id === todo.assignedTo)?.name ?? todo.assignedTo;
 
           return (
@@ -367,7 +378,6 @@ export const TodoTab: React.FC<TodoTabProps> = ({
                     )
                   }
                   className="mt-0.5 text-slate-400 hover:text-emerald-400 transition shrink-0"
-                  title="Toggle complete"
                 >
                   {todo.status === 'done' ? (
                     <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -383,7 +393,7 @@ export const TodoTab: React.FC<TodoTabProps> = ({
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${catBadge.color}`}
                     >
-                      {catBadge.label}
+                      {catLabelMap[todo.category]}
                     </span>
                     <span
                       className={`px-1.5 py-0.5 rounded text-[10px] font-medium uppercase ${
@@ -400,7 +410,7 @@ export const TodoTab: React.FC<TodoTabProps> = ({
                       <UserCheck className="w-3 h-3" /> {assignee}
                     </span>
                     {todo.dueDate && (
-                      <span className="text-[11px] text-slate-500">Due: {todo.dueDate}</span>
+                      <span className="text-[11px] text-slate-500">{tr.dueWord}: {todo.dueDate}</span>
                     )}
                   </div>
 
@@ -418,7 +428,7 @@ export const TodoTab: React.FC<TodoTabProps> = ({
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-[11px] text-sky-300">
                       <MapPin className="w-3 h-3" />
                       <span>
-                        Linked Property: <strong>{linkedProp.veedel}</strong> —{' '}
+                        {tr.linkedPropLabel}: <strong>{linkedProp.veedel}</strong> —{' '}
                         {linkedProp.title.slice(0, 55)}
                       </span>
                     </div>
@@ -432,9 +442,9 @@ export const TodoTab: React.FC<TodoTabProps> = ({
                   onChange={(e) => onUpdateTodoStatus(todo.id, e.target.value as TodoStatus)}
                   className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200"
                 >
-                  <option value="todo">To Do</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="done">Done ✅</option>
+                  <option value="todo">{tr.statusTodo}</option>
+                  <option value="in-progress">{tr.statusInProgress}</option>
+                  <option value="done">{tr.statusDone} ✅</option>
                 </select>
                 <button
                   onClick={() => onDeleteTodo(todo.id)}

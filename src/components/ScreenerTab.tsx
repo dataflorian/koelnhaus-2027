@@ -41,8 +41,10 @@ import {
   buildGoogleMapsUrl,
   formatEUR
 } from '../utils/housingMath';
+import { Lang, TRANSLATIONS } from '../i18n/translations';
 
 interface ScreenerTabProps {
+  lang: Lang;
   listings: PropertyListing[];
   roommates: RoommateProfile[];
   activeRoommateId: string;
@@ -92,6 +94,7 @@ const STATUS_LABELS: Record<PropertyStatus, { label: string; color: string }> = 
 };
 
 export const ScreenerTab: React.FC<ScreenerTabProps> = ({
+  lang,
   listings,
   roommates,
   activeRoommateId,
@@ -104,6 +107,20 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
   onOpenInLoanCalculator,
   onOpenInOutreach
 }) => {
+  const t = TRANSLATIONS[lang].screener;
+  const modeLabelMap: Record<ListingMode, string> = {
+    rent: t.modeRent.toUpperCase(),
+    buy: t.modeBuy.toUpperCase(),
+    zvg: t.modeZvg.toUpperCase(),
+    erbpacht: t.modeErbpacht.toUpperCase()
+  };
+  const statusLabelMap: Record<PropertyStatus, string> = {
+    new: t.statusNew,
+    pinned: t.statusPinned,
+    contacted: t.statusContacted,
+    viewing: t.statusViewing,
+    archived: t.statusArchived
+  };
   const [filters, setFilters] = useState<ScreenerFilters>(DEFAULT_FILTERS);
   const [showFiltersPanel, setShowFiltersPanel] = useState(true);
   const [todoModalProperty, setTodoModalProperty] = useState<PropertyListing | null>(null);
@@ -290,25 +307,25 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
       {/* Top KPI & Quick Actions Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5">
-          <div className="text-xs text-slate-400">Matching Properties</div>
+          <div className="text-xs text-slate-400">{t.matchingProperties}</div>
           <div className="text-2xl font-bold text-white mt-0.5">
             {filteredListings.length}{' '}
-            <span className="text-xs font-normal text-slate-400">/ {listings.length} total</span>
+            <span className="text-xs font-normal text-slate-400">/ {listings.length} {t.totalSuffix}</span>
           </div>
         </div>
         <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5">
-          <div className="text-xs text-slate-400">Pinned High-Interest</div>
+          <div className="text-xs text-slate-400">{t.pinnedHigh}</div>
           <div className="text-2xl font-bold text-amber-400 mt-0.5">{stats.pinnedCount}</div>
         </div>
         <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5">
-          <div className="text-xs text-slate-400">Contacted / Viewing</div>
+          <div className="text-xs text-slate-400">{t.contactedViewing}</div>
           <div className="text-2xl font-bold text-emerald-400 mt-0.5">{stats.contactedCount}</div>
         </div>
         <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5">
-          <div className="text-xs text-slate-400">Avg. Effective Cost / Person</div>
+          <div className="text-xs text-slate-400">{t.avgPerPerson}</div>
           <div className="text-2xl font-bold text-sky-400 mt-0.5">
             {formatEUR(stats.avgPerPerson)}
-            <span className="text-xs font-normal text-slate-400">/mo</span>
+            <span className="text-xs font-normal text-slate-400">{t.perMonth}</span>
           </div>
         </div>
         <div className="col-span-2 lg:col-span-1 flex items-center gap-2">
@@ -317,7 +334,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
             className="w-full h-full min-h-[60px] flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl px-4 transition shadow-lg shadow-indigo-950/50"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Listing URL</span>
+            <span>{t.addListingUrl}</span>
           </button>
         </div>
       </div>
@@ -326,11 +343,11 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/70 border border-slate-800 rounded-xl p-3">
         <div className="flex flex-wrap items-center gap-2">
           {[
-            { id: 'all', label: 'All Listings' },
-            { id: 'pinned', label: `📌 Pinned (${stats.pinnedCount})` },
-            { id: 'contacted', label: `✅ Contacted (${stats.contactedCount})` },
-            { id: 'top-ai', label: '🔥 AI Score 88+' },
-            { id: 'wg-friendly', label: '🤝 WG-Friendly' }
+            { id: 'all', label: t.quickAll },
+            { id: 'pinned', label: `📌 ${t.quickPinned} (${stats.pinnedCount})` },
+            { id: 'contacted', label: `✅ ${t.quickContacted} (${stats.contactedCount})` },
+            { id: 'top-ai', label: `🔥 ${t.quickTopAi}` },
+            { id: 'wg-friendly', label: `🤝 ${t.quickWg}` }
           ].map((pill) => (
             <button
               key={pill.id}
@@ -356,7 +373,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
             type="text"
             value={filters.searchText}
             onChange={(e) => setFilters((f) => ({ ...f, searchText: e.target.value }))}
-            placeholder="Search Veedel, street, Souterrain, Nachmieter..."
+            placeholder={t.searchPlaceholder}
             className="w-full sm:w-64 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
           />
           <button
@@ -364,7 +381,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700"
           >
             <Filter className="w-3.5 h-3.5" />
-            <span>{showFiltersPanel ? 'Hide Filters' : 'Filters'}</span>
+            <span>{showFiltersPanel ? t.hideFilters : t.showFilters}</span>
           </button>
         </div>
       </div>
@@ -376,28 +393,28 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                 <Filter className="w-4 h-4 text-indigo-400" />
-                Screener Parameters
+                {t.filterTitle}
               </h3>
               <button
                 onClick={() => setFilters(DEFAULT_FILTERS)}
                 className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
               >
-                <RotateCcw className="w-3 h-3" /> Reset
+                <RotateCcw className="w-3 h-3" /> {t.reset}
               </button>
             </div>
 
             {/* Mode */}
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                Acquisition Track
+                {t.acquisitionTrack}
               </label>
               <div className="grid grid-cols-3 gap-1.5">
                 {[
-                  { id: 'all', label: 'All' },
-                  { id: 'rent', label: 'Rent' },
-                  { id: 'buy', label: 'Buy' },
-                  { id: 'zvg', label: 'ZVG Auction' },
-                  { id: 'erbpacht', label: 'Erbpacht' }
+                  { id: 'all', label: t.modeAll },
+                  { id: 'rent', label: t.modeRent },
+                  { id: 'buy', label: t.modeBuy },
+                  { id: 'zvg', label: t.modeZvg },
+                  { id: 'erbpacht', label: t.modeErbpacht }
                 ].map((m) => (
                   <button
                     key={m.id}
@@ -419,7 +436,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
             {/* Max Monthly Per Person */}
             <div>
               <div className="flex justify-between text-xs mb-1">
-                <span className="text-slate-400">Max Cost / Person / Mo</span>
+                <span className="text-slate-400">{t.maxCostPerson}</span>
                 <span className="font-semibold text-sky-400">
                   €{filters.maxMonthlyPerPerson}
                 </span>
@@ -442,7 +459,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
               <div className="flex justify-between text-xs">
                 <span className="text-slate-300 font-medium flex items-center gap-1">
                   <Flag className="w-3.5 h-3.5 text-rose-400" />
-                  Max Commute (Any Roommate)
+                  {t.maxCommute}
                 </span>
                 <span className="font-semibold text-amber-300">
                   {filters.maxSingleCommuteMins} min
@@ -468,14 +485,14 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   }
                   className="rounded border-slate-600 bg-slate-800 text-indigo-600"
                 />
-                <span>Hide properties with Commute Flag</span>
+                <span>{t.hideCommuteFlagged}</span>
               </label>
             </div>
 
             {/* Rooms, AI Bedrooms, Baths, SqM */}
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Min Listed Rooms</label>
+                <label className="block text-[11px] text-slate-400 mb-1">{t.minListedRooms}</label>
                 <select
                   value={filters.minTotalRooms}
                   onChange={(e) =>
@@ -483,16 +500,16 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   }
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
                 >
-                  <option value={4}>4.0+ Rooms</option>
-                  <option value={4.5}>4.5+ Rooms</option>
-                  <option value={5.5}>5.5+ Rooms</option>
-                  <option value={6}>6.0+ Rooms</option>
-                  <option value={7}>7.0+ Rooms</option>
+                  <option value={4}>4.0+</option>
+                  <option value={4.5}>4.5+</option>
+                  <option value={5.5}>5.5+</option>
+                  <option value={6}>6.0+</option>
+                  <option value={7}>7.0+</option>
                 </select>
               </div>
               <div>
                 <label className="block text-[11px] text-slate-400 mb-1">
-                  AI Viable Bedrooms
+                  {t.aiBedrooms}
                 </label>
                 <select
                   value={filters.minAiBedrooms}
@@ -501,14 +518,14 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   }
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
                 >
-                  <option value={4}>4+ Bedrooms</option>
-                  <option value={5}>5+ Bedrooms</option>
-                  <option value={6}>6+ Bedrooms (Exact Fit)</option>
-                  <option value={7}>7+ Bedrooms</option>
+                  <option value={4}>4+</option>
+                  <option value={5}>5+</option>
+                  <option value={6}>6+</option>
+                  <option value={7}>7+</option>
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Min Baths / WCs</label>
+                <label className="block text-[11px] text-slate-400 mb-1">{t.minBaths}</label>
                 <select
                   value={filters.minBathrooms}
                   onChange={(e) =>
@@ -524,7 +541,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Min Space (m²)</label>
+                <label className="block text-[11px] text-slate-400 mb-1">{t.minSpace}</label>
                 <select
                   value={filters.minSqm}
                   onChange={(e) => setFilters((f) => ({ ...f, minSqm: Number(e.target.value) }))}
@@ -552,7 +569,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   }
                   className="rounded border-slate-600 bg-slate-800"
                 />
-                <span>Garden / Yard required</span>
+                <span>{t.requireGarden}</span>
               </label>
               <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                 <input
@@ -563,7 +580,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   }
                   className="rounded border-slate-600 bg-slate-800"
                 />
-                <span>Exclude explicit "Keine WG"</span>
+                <span>{t.requireWgFriendly}</span>
               </label>
               <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                 <input
@@ -574,7 +591,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   }
                   className="rounded border-slate-600 bg-slate-800"
                 />
-                <span>Exclude Erbpacht (leasehold)</span>
+                <span>{t.excludeErbpacht}</span>
               </label>
               <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                 <input
@@ -585,14 +602,14 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   }
                   className="rounded border-slate-600 bg-slate-800"
                 />
-                <span>Exclude WBS-restricted flats</span>
+                <span>{t.excludeWbs}</span>
               </label>
             </div>
 
             {/* Veedel Selector */}
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                Cologne Veedel / Belt ({filters.selectedVeedels.length || 'All'})
+                {t.veedelLabel} ({filters.selectedVeedels.length || t.allLabel})
               </label>
               <div className="flex flex-wrap gap-1.5">
                 {allVeedels.map((v) => {
@@ -617,7 +634,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
             {/* Portal & Sort */}
             <div className="space-y-2.5 pt-1">
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Source Portal</label>
+                <label className="block text-[11px] text-slate-400 mb-1">{t.sourcePortal}</label>
                 <select
                   value={filters.selectedPortal}
                   onChange={(e) =>
@@ -625,7 +642,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   }
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
                 >
-                  <option value="all">All Portals ({allPortals.length})</option>
+                  <option value="all">{t.allPortals} ({allPortals.length})</option>
                   {allPortals.map((p) => (
                     <option key={p} value={p}>
                       {p}
@@ -634,7 +651,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Sort Results By</label>
+                <label className="block text-[11px] text-slate-400 mb-1">{t.sortBy}</label>
                 <select
                   value={filters.sortBy}
                   onChange={(e) =>
@@ -645,11 +662,11 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   }
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100"
                 >
-                  <option value="aiScore">AI Match Score (High → Low)</option>
-                  <option value="costAsc">Lowest €/Person/Mo</option>
-                  <option value="sqmDesc">Largest Living Space (m²)</option>
-                  <option value="commuteAsc">Fastest Max Commute</option>
-                  <option value="newest">Most Recently Published</option>
+                  <option value="aiScore">{t.sortAi}</option>
+                  <option value="costAsc">{t.sortCost}</option>
+                  <option value="sqmDesc">{t.sortSqm}</option>
+                  <option value="commuteAsc">{t.sortCommute}</option>
+                  <option value="newest">{t.sortNewest}</option>
                 </select>
               </div>
             </div>
@@ -665,15 +682,13 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
           {filteredListings.length === 0 ? (
             <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-10 text-center space-y-2">
               <Home className="w-8 h-8 text-slate-500 mx-auto" />
-              <h4 className="text-base font-medium text-white">No listings match current filters</h4>
-              <p className="text-sm text-slate-400">
-                Try increasing Max €/Person/Mo, lowering Min AI Bedrooms to 5, or resetting filters.
-              </p>
+              <h4 className="text-base font-medium text-white">{t.noMatchesTitle}</h4>
+              <p className="text-sm text-slate-400">{t.noMatchesDesc}</p>
               <button
                 onClick={() => setFilters(DEFAULT_FILTERS)}
                 className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-500"
               >
-                <RotateCcw className="w-3.5 h-3.5" /> Reset All Filters
+                <RotateCcw className="w-3.5 h-3.5" /> {t.resetAllFilters}
               </button>
             </div>
           ) : (
@@ -699,7 +714,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                         <span
                           className={`px-2 py-0.5 rounded text-[11px] font-bold border ${modeInfo.color}`}
                         >
-                          {modeInfo.label}
+                          {modeLabelMap[item.mode]}
                         </span>
                         <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-300">
                           {item.propertyType}
@@ -708,25 +723,25 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                           {item.portal}
                         </span>
                         <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
-                          AI Fit: {item.aiScore}/100
+                          {t.aiFit}: {item.aiScore}/100
                         </span>
                         {commuteInfo.hasFlag ? (
                           <span
-                            title="One or more roommates exceed commute threshold"
+                            title="Pendelzeit-Limit überschritten"
                             className="px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1"
                           >
                             <Flag className="w-3 h-3" />
-                            Commute Flag ({commuteInfo.maxKvbMins}m)
+                            {t.commuteFlag} ({commuteInfo.maxKvbMins}m)
                           </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" />
-                            All ≤ {commuteInfo.maxKvbMins}m
+                            {t.allUnder} ≤ {commuteInfo.maxKvbMins}m
                           </span>
                         )}
                         {!item.wgFriendly && (
                           <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-900/40 text-rose-300 border border-rose-700">
-                            "Keine WG" Alert
+                            {t.keineWgAlert}
                           </span>
                         )}
                       </div>
@@ -748,7 +763,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                         >
                           <MapPin className="w-3.5 h-3.5" />
                           <span>
-                            Google Maps ({item.isExactAddress ? 'Exact' : 'Approx. Area'})
+                            {t.googleMaps} ({item.isExactAddress ? t.exactLoc : t.approxArea})
                           </span>
                           <ExternalLink className="w-3 h-3" />
                         </a>
@@ -766,7 +781,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                         }`}
                       >
                         <Pin className="w-3.5 h-3.5" />
-                        <span>{item.pinned ? 'Pinned' : 'Pin'}</span>
+                        <span>{item.pinned ? t.pinnedBtn : t.pinBtn}</span>
                       </button>
 
                       <select
@@ -776,11 +791,11 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                         }
                         className={`rounded-lg px-2.5 py-1.5 text-xs font-medium focus:outline-none ${statusInfo.color}`}
                       >
-                        <option value="new">Status: New</option>
-                        <option value="pinned">Status: Pinned</option>
-                        <option value="contacted">Status: Contacted ✅</option>
-                        <option value="viewing">Status: Viewing 📅</option>
-                        <option value="archived">Status: Archived</option>
+                        <option value="new">Status: {statusLabelMap.new}</option>
+                        <option value="pinned">Status: {statusLabelMap.pinned}</option>
+                        <option value="contacted">Status: {statusLabelMap.contacted} ✅</option>
+                        <option value="viewing">Status: {statusLabelMap.viewing} 📅</option>
+                        <option value="archived">Status: {statusLabelMap.archived}</option>
                       </select>
 
                       <button
@@ -791,7 +806,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-semibold shadow-sm"
                       >
                         <FileText className="w-3.5 h-3.5" />
-                        <span>View Full Webpage Copy</span>
+                        <span>{t.viewWebpageCopy}</span>
                       </button>
 
                       <a
@@ -805,7 +820,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                         }
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700"
                       >
-                        <span>Live Source</span>
+                        <span>{t.liveSource}</span>
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     </div>
@@ -816,8 +831,8 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                     <div className="mt-2 inline-flex flex-wrap items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-950/40 border border-emerald-500/25 text-[11px] text-emerald-300">
                       <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                       <span>
-                        Verified Live Ad (HTTP {item.httpStatus ?? 200}) • Published:{' '}
-                        <strong>{item.publishedAt}</strong> • Snapshot captured:{' '}
+                        {t.verifiedLive} (HTTP {item.httpStatus ?? 200}) • {t.published}:{' '}
+                        <strong>{item.publishedAt}</strong> • {t.snapshotCaptured}:{' '}
                         {item.verifiedAt?.slice(0, 16).replace('T', ' ')} UTC
                       </span>
                     </div>
@@ -827,7 +842,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 my-4 p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
                     <div>
                       <div className="text-[11px] text-slate-400">
-                        {item.mode === 'rent' ? 'Kaltmiete + NK' : 'Purchase Price'}
+                        {item.mode === 'rent' ? t.kaltmieteNk : t.purchasePrice}
                       </div>
                       <div className="text-sm font-bold text-white">
                         {formatEUR(item.basePriceOrColdRent)}
@@ -840,7 +855,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                       </div>
                       {item.erbpachtMonthly && (
                         <div className="text-[10px] text-purple-300">
-                          +{item.erbpachtMonthly}€/mo Erbpacht
+                          +{item.erbpachtMonthly}€{t.perMonth} Erbpacht
                         </div>
                       )}
                       {item.mode !== 'rent' && (
@@ -851,47 +866,47 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                     </div>
 
                     <div>
-                      <div className="text-[11px] text-slate-400">Est. €/Person/Mo</div>
+                      <div className="text-[11px] text-slate-400">{t.estMonthlyPerson}</div>
                       <div className="text-sm font-bold text-sky-400">
-                        {formatEUR(item.effectiveMonthlyPerPerson)}/mo
+                        {formatEUR(item.effectiveMonthlyPerPerson)}{t.perMonth}
                       </div>
-                      <div className="text-[10px] text-slate-500">Split 6 ways</div>
+                      <div className="text-[10px] text-slate-500">{t.split6Ways}</div>
                     </div>
 
                     <div>
-                      <div className="text-[11px] text-slate-400">Space & Plot</div>
+                      <div className="text-[11px] text-slate-400">{t.spacePlot}</div>
                       <div className="text-sm font-semibold text-white">
                         {item.livingSpaceSqm} m²
                       </div>
                       <div className="text-[10px] text-slate-400">
-                        {item.plotSqm ? `${item.plotSqm} m² plot` : 'Apartment'}
+                        {item.plotSqm ? `${item.plotSqm} m²` : t.apartmentLabel}
                       </div>
                     </div>
 
                     <div>
                       <div className="text-[11px] text-slate-400 flex items-center gap-1">
-                        <BedDouble className="w-3 h-3 text-indigo-400" /> Bedrooms
+                        <BedDouble className="w-3 h-3 text-indigo-400" /> {t.bedroomsLabel}
                       </div>
                       <div className="text-sm font-semibold text-white">
-                        {item.aiViableBedrooms} viable{' '}
+                        {item.aiViableBedrooms} {t.viableSuffix}{' '}
                         <span className="text-xs font-normal text-slate-400">
                           ({item.listedRooms} Zi)
                         </span>
                       </div>
-                      <div className="text-[10px] text-slate-400">Energy: {item.energyClass}</div>
+                      <div className="text-[10px] text-slate-400">Energie: {item.energyClass}</div>
                     </div>
 
                     <div>
                       <div className="text-[11px] text-slate-400 flex items-center gap-1">
-                        <Bath className="w-3 h-3 text-sky-400" /> Baths / Features
+                        <Bath className="w-3 h-3 text-sky-400" /> {t.bathsFeatures}
                       </div>
                       <div className="text-sm font-semibold text-white">
-                        {item.bathroomsAndWcs} Baths
+                        {item.bathroomsAndWcs} {t.bathsWord}
                       </div>
                       <div className="text-[10px] text-slate-400 flex items-center gap-1">
                         {item.hasGarden && (
                           <span className="text-emerald-400 flex items-center gap-0.5">
-                            <Trees className="w-3 h-3" /> Garden
+                            <Trees className="w-3 h-3" /> {t.gardenWord}
                           </span>
                         )}
                         {item.hasFittedKitchen && <span>• EBK</span>}
@@ -900,7 +915,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
 
                     <div>
                       <div className="text-[11px] text-slate-400 flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> Move-In Target
+                        <Clock className="w-3 h-3" /> {t.moveInTarget}
                       </div>
                       <div className="text-xs font-semibold text-slate-200 mt-0.5">
                         {item.availableFrom}
@@ -914,8 +929,8 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   {/* Per-Roommate Commute Matrix */}
                   <div className="mb-3.5">
                     <div className="text-[11px] font-medium text-slate-400 mb-1.5 flex items-center justify-between">
-                      <span>6-Roommate KVB Transit & Bike Matrix (click any pill for Maps directions)</span>
-                      <span className="text-slate-500">Avg KVB: {commuteInfo.avgKvbMins} min</span>
+                      <span>{t.commuteMatrixTitle}</span>
+                      <span className="text-slate-500">{t.avgKvb}: {commuteInfo.avgKvbMins} min</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5">
                       {roommates.map((rm) => {
@@ -952,12 +967,12 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                     <div className="flex items-start gap-2 text-xs text-slate-200">
                       <Sparkles className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-semibold text-indigo-300">AI Screener Note: </span>
+                        <span className="font-semibold text-indigo-300">{t.aiNoteLabel}: </span>
                         {item.aiSummary}
                       </div>
                     </div>
                     <div className="text-xs text-slate-300 pl-6">
-                      <span className="font-semibold text-sky-300">Layout / Bedrooms: </span>
+                      <span className="font-semibold text-sky-300">{t.layoutLabel}: </span>
                       {item.aiFloorplanInsight}
                     </div>
                     {item.aiRedFlags.length > 0 && (
@@ -1004,7 +1019,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="flex items-center gap-1 bg-slate-800/80 rounded-lg px-2 py-1 border border-slate-700">
                         <span className="text-[11px] text-slate-400 mr-1">
-                          Vote ({upVotes}/6 👍):
+                          {t.voteLabel} ({upVotes}/6 👍):
                         </span>
                         {(['up', 'maybe', 'down'] as RoommateVote[]).map((voteType) => {
                           const selected = item.votes[activeRoommateId] === voteType;
@@ -1043,7 +1058,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                         className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700"
                       >
                         <MessageSquarePlus className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Add Todo</span>
+                        <span>{t.addTodoBtn}</span>
                       </button>
 
                       {item.mode !== 'rent' && (
@@ -1052,7 +1067,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-xs text-emerald-300 border border-emerald-500/30"
                         >
                           <Calculator className="w-3.5 h-3.5" />
-                          <span>Model Loan</span>
+                          <span>{t.modelLoanBtn}</span>
                         </button>
                       )}
 
@@ -1061,7 +1076,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                         className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-medium"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span>AI Pitch</span>
+                        <span>{t.aiPitchBtn}</span>
                       </button>
                     </div>
                   </div>
@@ -1072,7 +1087,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                       type="text"
                       value={item.notes}
                       onChange={(e) => onUpdateNotes(item.id, e.target.value)}
-                      placeholder="Shared roommate notes (e.g., called landlord, asked for floorplan)..."
+                      placeholder={t.notesPlaceholder}
                       className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none"
                     />
                   </div>
@@ -1090,7 +1105,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
             <div className="flex items-center justify-between">
               <h4 className="font-semibold text-white flex items-center gap-2">
                 <Bookmark className="w-4 h-4 text-amber-400" />
-                Add Task for {todoModalProperty.veedel} Property
+                {t.todoModalTitle} ({todoModalProperty.veedel})
               </h4>
               <button
                 onClick={() => setTodoModalProperty(null)}
@@ -1102,7 +1117,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
             <div className="text-xs text-slate-400">{todoModalProperty.title}</div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-slate-300 mb-1">Task Description</label>
+                <label className="block text-xs text-slate-300 mb-1">{t.taskDescription}</label>
                 <input
                   type="text"
                   value={todoDraftTitle}
@@ -1111,13 +1126,13 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-300 mb-1">Assign To</label>
+                <label className="block text-xs text-slate-300 mb-1">{t.assignTo}</label>
                 <select
                   value={todoDraftAssignee}
                   onChange={(e) => setTodoDraftAssignee(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
                 >
-                  <option value="All">All 6 Roommates</option>
+                  <option value="All">{t.all6Roommates}</option>
                   {roommates.map((rm) => (
                     <option key={rm.id} value={rm.id}>
                       {rm.name}
@@ -1131,7 +1146,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                 onClick={() => setTodoModalProperty(null)}
                 className="px-4 py-2 rounded-lg bg-slate-800 text-xs text-slate-300 hover:bg-slate-700"
               >
-                Cancel
+                {t.cancel}
               </button>
               <button
                 onClick={() => {
@@ -1147,7 +1162,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                 }}
                 className="px-4 py-2 rounded-lg bg-indigo-600 text-xs text-white font-medium hover:bg-indigo-500"
               >
-                Save to Shared Todo List
+                {t.saveTodo}
               </button>
             </div>
           </div>
@@ -1162,7 +1177,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
             className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 space-y-4"
           >
             <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-white">Add / Import Property Listing</h4>
+              <h4 className="font-semibold text-white">{t.importTitle}</h4>
               <button
                 type="button"
                 onClick={() => setShowImportModal(false)}
@@ -1174,31 +1189,31 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div className="sm:col-span-2">
-                <label className="block text-xs text-slate-400 mb-1">Listing Title *</label>
+                <label className="block text-xs text-slate-400 mb-1">{t.listingTitleReq}</label>
                 <input
                   required
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="e.g., 6-Zi Reihenhaus in Nippes mit Garten"
+                  placeholder="z.B. 6-Zi Reihenhaus in Nippes mit Garten"
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Mode</label>
+                <label className="block text-xs text-slate-400 mb-1">{t.modeLabel}</label>
                 <select
                   value={newMode}
                   onChange={(e) => setNewMode(e.target.value as ListingMode)}
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white"
                 >
-                  <option value="rent">Rent</option>
-                  <option value="buy">Buy</option>
-                  <option value="zvg">ZVG Auction</option>
-                  <option value="erbpacht">Erbpacht</option>
+                  <option value="rent">{t.modeRent}</option>
+                  <option value="buy">{t.modeBuy}</option>
+                  <option value="zvg">{t.modeZvg}</option>
+                  <option value="erbpacht">{t.modeErbpacht}</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Veedel</label>
+                <label className="block text-xs text-slate-400 mb-1">{t.veedelInputLabel}</label>
                 <input
                   type="text"
                   value={newVeedel}
@@ -1208,18 +1223,18 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-xs text-slate-400 mb-1">
-                  Approx. Street / Area (for Google Maps link)
+                  {t.approxAddressLabel}
                 </label>
                 <input
                   type="text"
                   value={newAddress}
                   onChange={(e) => setNewAddress(e.target.value)}
-                  placeholder="e.g., Neusser Straße / Florastraße, 50733 Köln"
+                  placeholder="z.B. Neusser Straße / Florastraße, 50733 Köln"
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Portal</label>
+                <label className="block text-xs text-slate-400 mb-1">{t.portalLabel}</label>
                 <input
                   type="text"
                   value={newPortal}
@@ -1228,7 +1243,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Listing URL</label>
+                <label className="block text-xs text-slate-400 mb-1">{t.listingUrlLabel}</label>
                 <input
                   type="url"
                   value={newPortalUrl}
@@ -1239,7 +1254,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">
-                  {newMode === 'rent' ? 'Kaltmiete (€/mo)' : 'Purchase Price (€)'}
+                  {newMode === 'rent' ? t.coldRentLabel : t.buyPriceLabel}
                 </label>
                 <input
                   type="number"
@@ -1250,7 +1265,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Space (m²)</label>
+                  <label className="block text-xs text-slate-400 mb-1">{t.spaceSqmLabel}</label>
                   <input
                     type="number"
                     value={newSqm}
@@ -1259,7 +1274,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Rooms</label>
+                  <label className="block text-xs text-slate-400 mb-1">{t.roomsLabel}</label>
                   <input
                     type="number"
                     step="0.5"
@@ -1277,13 +1292,13 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                 onClick={() => setShowImportModal(false)}
                 className="px-4 py-2 rounded-lg bg-slate-800 text-xs text-slate-300"
               >
-                Cancel
+                {t.cancel}
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 rounded-lg bg-indigo-600 text-xs text-white font-medium hover:bg-indigo-500"
               >
-                Add & Pin to Screener
+                {t.addAndPin}
               </button>
             </div>
           </form>
@@ -1299,11 +1314,11 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                 <div className="flex items-center gap-2 text-xs text-emerald-300">
                   <ShieldCheck className="w-4 h-4 shrink-0" />
                   <span className="font-semibold">
-                    Archived Full Webpage Copy — {snapshotListing.portal}
+                    {t.archivedTitle} — {snapshotListing.portal}
                   </span>
                   {snapshotListing.verifiedAt && (
                     <span className="text-slate-400">
-                      • Captured {snapshotListing.verifiedAt.slice(0, 16).replace('T', ' ')} UTC
+                      • {t.capturedWord} {snapshotListing.verifiedAt.slice(0, 16).replace('T', ' ')} UTC
                     </span>
                   )}
                 </div>
@@ -1323,7 +1338,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                           : 'text-slate-300 hover:text-white'
                       }`}
                     >
-                      Rendered Webpage Copy
+                      {t.renderedCopyTab}
                     </button>
                   )}
                   <button
@@ -1334,7 +1349,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                         : 'text-slate-300 hover:text-white'
                     }`}
                   >
-                    Clean Exposé & Evidence
+                    {t.cleanReaderTab}
                   </button>
                 </div>
 
@@ -1344,7 +1359,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-sky-300 border border-slate-700"
                 >
-                  <span>Original URL</span>
+                  <span>{t.originalUrlBtn}</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
 
@@ -1382,19 +1397,21 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
                       </div>
                     </div>
                     <div>
-                      <div className="text-slate-400">Price / Kaltmiete</div>
+                      <div className="text-slate-400">
+                        {snapshotListing.mode === 'rent' ? t.kaltmieteNk : t.purchasePrice}
+                      </div>
                       <div className="text-white font-bold">
                         {formatEUR(snapshotListing.basePriceOrColdRent)}
                       </div>
                     </div>
                     <div>
-                      <div className="text-slate-400">Size & Rooms</div>
+                      <div className="text-slate-400">{t.spacePlot}</div>
                       <div className="text-white font-semibold">
                         {snapshotListing.livingSpaceSqm} m² • {snapshotListing.listedRooms} Zi
                       </div>
                     </div>
                     <div>
-                      <div className="text-slate-400">Published / Verified</div>
+                      <div className="text-slate-400">{t.published}</div>
                       <div className="text-emerald-300 font-semibold">
                         {snapshotListing.publishedAt} (HTTP {snapshotListing.httpStatus ?? 200})
                       </div>
@@ -1403,7 +1420,7 @@ export const ScreenerTab: React.FC<ScreenerTabProps> = ({
 
                   <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
                     <div className="text-xs font-semibold text-indigo-300 uppercase">
-                      Extracted Full Description & Specs
+                      {t.extractedDescTitle}
                     </div>
                     <p className="text-sm text-slate-200 whitespace-pre-line leading-relaxed">
                       {snapshotListing.fullDescription || snapshotListing.aiSummary}

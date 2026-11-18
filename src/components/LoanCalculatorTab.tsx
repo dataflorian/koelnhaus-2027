@@ -17,8 +17,10 @@ import {
   RoommateProfile
 } from '../types/housing';
 import { formatEUR, simulateGermanLoan } from '../utils/housingMath';
+import { Lang, TRANSLATIONS } from '../i18n/translations';
 
 interface LoanCalculatorTabProps {
+  lang: Lang;
   listings: PropertyListing[];
   roommates: RoommateProfile[];
   loanProviders: LoanProviderBenchmark[];
@@ -27,12 +29,14 @@ interface LoanCalculatorTabProps {
 }
 
 export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
+  lang,
   listings,
   roommates,
   loanProviders,
   selectedPropertyId,
   onSelectPropertyId
 }) => {
+  const t = TRANSLATIONS[lang].loans;
   const buyableListings = useMemo(
     () => listings.filter((l) => l.mode !== 'rent'),
     [listings]
@@ -226,17 +230,14 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Calculator className="w-5 h-5 text-emerald-400" />
-            German Baufinanzierung & Multi-Borrower Loan Calculator
+            {t.title}
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Automatically maps Screener purchase prices + NRW Kaufnebenkosten (6.5% tax) across
-            variable borrower structures (5 Working + 1 Student or 6-person Syndikat).
-          </p>
+          <p className="text-xs text-slate-400 mt-0.5">{t.subtitle}</p>
         </div>
 
         <div className="w-full lg:w-96">
           <label className="block text-[11px] font-medium text-slate-400 mb-1">
-            Auto-Map Screener Property Price
+            {t.autoMapLabel}
           </label>
           <select
             value={selectedProperty?.id ?? ''}
@@ -269,13 +270,13 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
         <div className="lg:col-span-5 bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4">
           <h3 className="text-sm font-semibold text-white flex items-center gap-2">
             <Sliders className="w-4 h-4 text-indigo-400" />
-            Acquisition & Loan Parameters
+            {t.paramsTitle}
           </h3>
 
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="col-span-2">
               <div className="flex justify-between mb-1">
-                <span className="text-slate-400">Purchase Price (Kaufpreis)</span>
+                <span className="text-slate-400">{t.purchasePrice}</span>
                 <span className="font-bold text-white">{formatEUR(purchasePrice)}</span>
               </div>
               <input
@@ -290,20 +291,20 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
             </div>
 
             <div>
-              <label className="block text-slate-400 mb-1">Makler Fee (%)</label>
+              <label className="block text-slate-400 mb-1">{t.brokerFee}</label>
               <select
                 value={brokerFeePct}
                 onChange={(e) => setBrokerFeePct(Number(e.target.value))}
                 className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white"
               >
-                <option value={0}>0% (Private / ZVG / Ohne-Makler)</option>
+                <option value={0}>0% (Privat / ZVG / Provisionsfrei)</option>
                 <option value={2.38}>2.38%</option>
-                <option value={3.57}>3.57% (Standard Buyer Split)</option>
+                <option value={3.57}>3.57% (Standard)</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-slate-400 mb-1">Notary + Grundbuch (%)</label>
+              <label className="block text-slate-400 mb-1">{t.notaryPct}</label>
               <input
                 type="number"
                 step="0.1"
@@ -314,7 +315,7 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
             </div>
 
             <div>
-              <label className="block text-slate-400 mb-1">Renovation Buffer (€)</label>
+              <label className="block text-slate-400 mb-1">{t.renovationReserve} (€)</label>
               <input
                 type="number"
                 step={5000}
@@ -325,7 +326,7 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
             </div>
 
             <div>
-              <label className="block text-slate-400 mb-1">Hausgeld / Utilities (€/mo)</label>
+              <label className="block text-slate-400 mb-1">{t.hausgeldLabel}</label>
               <input
                 type="number"
                 step={20}
@@ -336,7 +337,7 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
             </div>
 
             <div>
-              <label className="block text-slate-400 mb-1">Interest Rate (% p.a.)</label>
+              <label className="block text-slate-400 mb-1">{t.interestRate}</label>
               <input
                 type="number"
                 step="0.05"
@@ -349,7 +350,7 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
             </div>
 
             <div>
-              <label className="block text-slate-400 mb-1">Initial Tilgung (% p.a.)</label>
+              <label className="block text-slate-400 mb-1">{t.initialTilgung}</label>
               <input
                 type="number"
                 step="0.25"
@@ -362,21 +363,21 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
             </div>
 
             <div>
-              <label className="block text-slate-400 mb-1">Zinsbindung (Years)</label>
+              <label className="block text-slate-400 mb-1">{t.zinsbindung}</label>
               <select
                 value={zinsbindungYears}
                 onChange={(e) => setZinsbindungYears(Number(e.target.value))}
                 className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white"
               >
-                <option value={10}>10 Years</option>
-                <option value={15}>15 Years</option>
-                <option value={20}>20 Years</option>
-                <option value={30}>30 Years</option>
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+                <option value={20}>20</option>
+                <option value={30}>30</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-slate-400 mb-1">Annual Sondertilgung (€/yr)</label>
+              <label className="block text-slate-400 mb-1">{t.annualSonder}</label>
               <input
                 type="number"
                 step={1000}
@@ -388,9 +389,7 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
             </div>
 
             <div>
-              <label className="block text-slate-400 mb-1">
-                Direktkredite (Syndikat Crowd-Loan €)
-              </label>
+              <label className="block text-slate-400 mb-1">{t.direktkrediteLabel}</label>
               <input
                 type="number"
                 step={10000}
@@ -402,7 +401,7 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
             </div>
 
             <div>
-              <label className="block text-slate-400 mb-1">Erbpachtzins (€/mo if any)</label>
+              <label className="block text-slate-400 mb-1">{t.erbpachtLabel}</label>
               <input
                 type="number"
                 step={50}
@@ -416,19 +415,17 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
 
           {/* NRW Kaufnebenkosten Breakdown */}
           <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5 text-xs">
-            <div className="font-semibold text-slate-200 mb-1">
-              NRW Acquisition Cost Breakdown
-            </div>
+            <div className="font-semibold text-slate-200 mb-1">{t.nrwBreakdownTitle}</div>
             <div className="flex justify-between text-slate-400">
               <span>Kaufpreis</span>
               <span className="text-slate-200">{formatEUR(sim.purchasePrice)}</span>
             </div>
             <div className="flex justify-between text-slate-400">
-              <span>NRW Grunderwerbsteuer (6.5%)</span>
+              <span>{t.nrwTax}</span>
               <span className="text-amber-300">+{formatEUR(sim.nrwTransferTax)}</span>
             </div>
             <div className="flex justify-between text-slate-400">
-              <span>Notary & Grundbuch ({notaryPct}%)</span>
+              <span>Notar & Grundbuch ({notaryPct}%)</span>
               <span className="text-slate-200">+{formatEUR(sim.notaryAndGrundbuch)}</span>
             </div>
             <div className="flex justify-between text-slate-400">
@@ -436,11 +433,11 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
               <span className="text-slate-200">+{formatEUR(sim.brokerFee)}</span>
             </div>
             <div className="flex justify-between text-slate-400">
-              <span>Renovation Reserve</span>
+              <span>{t.renovationReserve}</span>
               <span className="text-slate-200">+{formatEUR(sim.renovationReserve)}</span>
             </div>
             <div className="flex justify-between font-bold text-white pt-1.5 border-t border-slate-800">
-              <span>Total Project Capital Needed</span>
+              <span>{t.totalCapitalNeeded}</span>
               <span>{formatEUR(sim.totalAcquisitionCost)}</span>
             </div>
           </div>
@@ -451,28 +448,28 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
           {/* KPI Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
-              <div className="text-[11px] text-slate-400">Repayment Duration</div>
+              <div className="text-[11px] text-slate-400">{t.repaymentDuration}</div>
               <div className="text-xl font-bold text-emerald-400 mt-0.5">
                 {sim.payoffYearsLabel}
               </div>
               <div className="text-[10px] text-slate-500">
-                incl. {formatEUR(annualSondertilgung)}/yr Sonder
+                {t.inclSonder} {formatEUR(annualSondertilgung)} Sondertilgung
               </div>
             </div>
 
             <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
-              <div className="text-[11px] text-slate-400">Bank + Direktkredit / Mo</div>
+              <div className="text-[11px] text-slate-400">{t.bankDirektMo}</div>
               <div className="text-xl font-bold text-white mt-0.5">
                 {formatEUR(Math.round(sim.monthlyBankPayment))}
               </div>
               <div className="text-[10px] text-slate-500">
-                +{formatEUR(monthlyHausgeld + erbpachtMonthly)} utilities/Pacht
+                +{formatEUR(monthlyHausgeld + erbpachtMonthly)} {t.plusUtilities}
               </div>
             </div>
 
             <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
               <div className="text-[11px] text-slate-400">
-                Restschuld after {zinsbindungYears}y
+                {t.restschuldAfter} {zinsbindungYears}J
               </div>
               <div className="text-xl font-bold text-amber-400 mt-0.5">
                 {formatEUR(sim.restschuldAtZinsbindung)}
@@ -483,12 +480,12 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
             </div>
 
             <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
-              <div className="text-[11px] text-slate-400">Total Equity + Direktkredite</div>
+              <div className="text-[11px] text-slate-400">{t.totalEquityDirekt}</div>
               <div className="text-xl font-bold text-sky-400 mt-0.5">
                 {formatEUR(totalEquity + direktkrediteAmount)}
               </div>
               <div className="text-[10px] text-slate-500">
-                Bank Loan: {formatEUR(Math.max(0, sim.totalLoanAmount - direktkrediteAmount))}
+                {t.bankLoan}: {formatEUR(Math.max(0, sim.totalLoanAmount - direktkrediteAmount))}
               </div>
             </div>
           </div>
@@ -499,37 +496,34 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
               <div>
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                   <Users className="w-4 h-4 text-sky-400" />
-                  Variable Multi-Borrower Split (5 Working + 1 Student)
+                  {t.splitTitle}
                 </h3>
-                <p className="text-xs text-slate-400">
-                  Adjust who signs the bank mortgage, individual equity, and internal WG rent for
-                  non-buyers.
-                </p>
+                <p className="text-xs text-slate-400">{t.splitDesc}</p>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 <button
                   onClick={() => applySplitPreset('5-working-buy')}
                   className="px-2.5 py-1 rounded bg-indigo-600/25 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/40 text-[11px] font-medium"
                 >
-                  5 Working Buy + Student Rents
+                  {t.preset5Buy}
                 </button>
                 <button
                   onClick={() => applySplitPreset('all-6-equal')}
                   className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px]"
                 >
-                  Equal 6-Way
+                  {t.presetEqual6}
                 </button>
                 <button
                   onClick={() => applySplitPreset('income-weighted')}
                   className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px]"
                 >
-                  Income-Weighted
+                  {t.presetIncome}
                 </button>
                 <button
                   onClick={() => applySplitPreset('syndikat-stack')}
                   className="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px]"
                 >
-                  Syndikat + €140k Direktkredite
+                  {t.presetSyndikat}
                 </button>
               </div>
             </div>
@@ -538,11 +532,11 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
               <table className="w-full text-xs text-left">
                 <thead>
                   <tr className="border-b border-slate-800 text-slate-400">
-                    <th className="py-2 pr-2">Roommate</th>
-                    <th className="py-2 px-2">Co-Borrower?</th>
-                    <th className="py-2 px-2">Equity (€)</th>
-                    <th className="py-2 px-2">Loan Share (%) / Rent (€)</th>
-                    <th className="py-2 pl-2 text-right">Monthly Total (incl. NK)</th>
+                    <th className="py-2 pr-2">{t.colRoommate}</th>
+                    <th className="py-2 px-2">{t.colCoBorrower}</th>
+                    <th className="py-2 px-2">{t.colEquity}</th>
+                    <th className="py-2 px-2">{t.colShareRent}</th>
+                    <th className="py-2 pl-2 text-right">{t.colMonthlyTotal}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/70">
@@ -563,7 +557,7 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
                         <td className="py-2.5 pr-2">
                           <div className="font-medium text-white">{rm.name}</div>
                           <div className="text-[10px] text-slate-400">
-                            {rm.role} • Net {formatEUR(rm.netMonthlyIncome)}/mo
+                            {rm.role} • {t.netLabel} {formatEUR(rm.netMonthlyIncome)}
                           </div>
                         </td>
                         <td className="py-2.5 px-2">
@@ -609,7 +603,7 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
                                 }
                                 className="w-16 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white"
                               />
-                              <span className="text-slate-400">% share</span>
+                              <span className="text-slate-400">{t.shareSuffix}</span>
                             </div>
                           ) : (
                             <div className="flex items-center gap-1.5">
@@ -625,12 +619,12 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
                                 }
                                 className="w-20 bg-slate-950 border border-amber-500/40 rounded px-2 py-1 text-amber-200"
                               />
-                              <span className="text-amber-300/80">€/mo rent</span>
+                              <span className="text-amber-300/80">{t.rentSuffix}</span>
                             </div>
                           )}
                         </td>
                         <td className="py-2.5 pl-2 text-right font-bold text-sky-400">
-                          {formatEUR(personTotalMonthly)}/mo
+                          {formatEUR(personTotalMonthly)}
                         </td>
                       </tr>
                     );
@@ -641,13 +635,13 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
 
             <div className="flex flex-wrap justify-between items-center gap-2 text-xs pt-2 border-t border-slate-800 text-slate-400">
               <span>
-                Non-buyer rent offset:{' '}
-                <strong className="text-amber-300">{formatEUR(totalNonBuyerRent)}/mo</strong> reduces
-                co-borrowers’ bank burden
+                {t.nonBuyerOffset}:{' '}
+                <strong className="text-amber-300">{formatEUR(totalNonBuyerRent)}</strong>{' '}
+                {t.reducesBurden}
               </span>
               <span>
-                Combined Group Monthly Cashflow:{' '}
-                <strong className="text-white">{formatEUR(Math.round(totalMonthlyGroupOutflow))}/mo</strong>
+                {t.combinedCashflow}:{' '}
+                <strong className="text-white">{formatEUR(Math.round(totalMonthlyGroupOutflow))}</strong>
               </span>
             </div>
           </div>
@@ -660,12 +654,9 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
           <div>
             <h3 className="text-base font-semibold text-white flex items-center gap-2">
               <Building2 className="w-4 h-4 text-amber-400" />
-              German Loan & Promotional Credit Comparison (Click to Apply Rate)
+              {t.providersTitle}
             </h3>
-            <p className="text-xs text-slate-400">
-              Compare commercial mortgage brokers, Cologne regional banks, KfW 124/261, NRW.BANK,
-              and GLS / Syndikat Direktkredite.
-            </p>
+            <p className="text-xs text-slate-400">{t.providersSub}</p>
           </div>
         </div>
 
@@ -692,9 +683,9 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
                   </div>
                   <h4 className="text-sm font-semibold text-white">{p.name}</h4>
                   <div className="text-[11px] text-slate-400 flex flex-wrap gap-x-3 gap-y-0.5">
-                    <span>Fixed: {p.zinsbindungYears}y</span>
-                    <span>Min Tilgung: {p.minTilgungPct}%</span>
-                    <span>Sondertilgung: {p.sondertilgungPct}%/yr</span>
+                    <span>{t.fixedWord}: {p.zinsbindungYears}J</span>
+                    <span>{t.minTilgungWord}: {p.minTilgungPct}%</span>
+                    <span>{t.sonderWord}: {p.sondertilgungPct}%</span>
                     {p.repaymentGrantPct && (
                       <span className="text-emerald-400 font-semibold">
                         Up to {p.repaymentGrantPct}–40% Grant!
@@ -711,7 +702,7 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
                     rel="noopener noreferrer"
                     className="text-xs text-sky-400 hover:underline inline-flex items-center gap-1"
                   >
-                    Portal <ExternalLink className="w-3 h-3" />
+                    {t.portalLink} <ExternalLink className="w-3 h-3" />
                   </a>
                   <button
                     onClick={() => applyProvider(p)}
@@ -722,7 +713,7 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
                     }`}
                   >
                     {active ? <Check className="w-3.5 h-3.5" /> : <Percent className="w-3.5 h-3.5" />}
-                    <span>{active ? 'Applied' : 'Simulate Rate'}</span>
+                    <span>{active ? t.appliedBtn : t.simulateBtn}</span>
                   </button>
                 </div>
               </div>
@@ -736,15 +727,15 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-base font-semibold text-white flex items-center gap-2">
             <TrendingDown className="w-4 h-4 text-emerald-400" />
-            Repayment Timeline over Time (Tilgungsplan)
+            {t.timelineTitle}
           </h3>
           <div className="text-xs text-slate-400 flex items-center gap-3">
             <span>
-              Total Interest over Lifetime:{' '}
+              {t.totalInterestLifetime}:{' '}
               <strong className="text-rose-300">{formatEUR(sim.totalInterestPaid)}</strong>
             </span>
             <span className="inline-flex items-center gap-1 text-emerald-300">
-              <Coins className="w-3.5 h-3.5" /> Debt-free in {sim.payoffYearsLabel}
+              <Coins className="w-3.5 h-3.5" /> {t.debtFreeIn} {sim.payoffYearsLabel}
             </span>
           </div>
         </div>
@@ -753,12 +744,12 @@ export const LoanCalculatorTab: React.FC<LoanCalculatorTabProps> = ({
           <table className="w-full text-xs text-left">
             <thead className="sticky top-0 bg-slate-900 border-b border-slate-800 text-slate-400">
               <tr>
-                <th className="py-2 px-2">Year</th>
-                <th className="py-2 px-2">Start Debt</th>
-                <th className="py-2 px-2">Interest Paid</th>
-                <th className="py-2 px-2">Principal + Sonder</th>
-                <th className="py-2 px-2">Remaining Debt</th>
-                <th className="py-2 px-2 w-40">Payoff Progress</th>
+                <th className="py-2 px-2">{t.colYear}</th>
+                <th className="py-2 px-2">{t.colStartDebt}</th>
+                <th className="py-2 px-2">{t.colInterestPaid}</th>
+                <th className="py-2 px-2">{t.colPrincipalSonder}</th>
+                <th className="py-2 px-2">{t.colEndDebt}</th>
+                <th className="py-2 px-2 w-40">{t.colProgress}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">

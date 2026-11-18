@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   Deploys KölnHaus 2027 to Google Cloud Run (Always-Free-eligible us-central1) with
   a shared group password and persistent cross-device sync via Google Cloud Storage.

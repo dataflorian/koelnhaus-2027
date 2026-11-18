@@ -36,6 +36,9 @@ import { SyndikatTab } from './components/SyndikatTab';
 import { OutreachTab } from './components/OutreachTab';
 import { PortalsAlertsTab } from './components/PortalsAlertsTab';
 import { PasswordGate } from './components/PasswordGate';
+import { Lang, TRANSLATIONS } from './i18n/translations';
+
+const LANG_STORAGE_KEY = 'koelnhaus-2027-lang';
 
 type TabId = 'screener' | 'todos' | 'loans' | 'syndikat' | 'outreach' | 'portals';
 
@@ -83,9 +86,27 @@ export function App() {
   const [alertConfig, setAlertConfig] = useState<AlertConfig>(initial.alertConfig);
   const [activeRoommateId, setActiveRoommateId] = useState<string>(initial.activeRoommateId);
   const [selectedPropertyForTool, setSelectedPropertyForTool] = useState<string | null>(null);
-  const [lastSyncedAt, setLastSyncedAt] = useState<string>('Local + GitHub Feed Ready');
+  const [lastSyncedAt, setLastSyncedAt] = useState<string>('Lokal + GitHub-Feed bereit');
   const [serverMode, setServerMode] = useState<boolean>(false);
   const [sessionStatus, setSessionStatus] = useState<'checking' | 'locked' | 'ready'>('checking');
+  const [lang, setLang] = useState<Lang>(() => {
+    try {
+      return localStorage.getItem(LANG_STORAGE_KEY) === 'en' ? 'en' : 'de';
+    } catch {
+      return 'de';
+    }
+  });
+
+  const t = TRANSLATIONS[lang].app;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LANG_STORAGE_KEY, lang);
+      document.documentElement.lang = lang;
+    } catch {
+      // Ignore storage errors
+    }
+  }, [lang]);
 
   const syncInitializedRef = useRef(false);
   const suppressNextPushRef = useRef(false);
@@ -355,34 +376,34 @@ export function App() {
   const tabs: Array<{ id: TabId; label: string; icon: React.ReactNode; badge?: string | number }> = [
     {
       id: 'screener',
-      label: 'Cologne Screener',
+      label: t.tabs.screener,
       icon: <Home className="w-4 h-4" />,
       badge: `${listings.length} (${pinnedCount}📌)`
     },
     {
       id: 'todos',
-      label: 'Shared Todos & Roadmap',
+      label: t.tabs.todos,
       icon: <CheckSquare className="w-4 h-4" />,
       badge: openTodoCount
     },
     {
       id: 'loans',
-      label: 'Loan & Split Calculator',
+      label: t.tabs.loans,
       icon: <Calculator className="w-4 h-4" />
     },
     {
       id: 'syndikat',
-      label: 'Syndikat & Models',
+      label: t.tabs.syndikat,
       icon: <Handshake className="w-4 h-4" />
     },
     {
       id: 'outreach',
-      label: 'AI Pitch & Dossier',
+      label: t.tabs.outreach,
       icon: <Sparkles className="w-4 h-4" />
     },
     {
       id: 'portals',
-      label: 'Portals, Signal & Hosting',
+      label: t.tabs.portals,
       icon: <Bell className="w-4 h-4" />,
       badge: portals.filter((p) => p.enabledInScraper).length
     }
@@ -391,7 +412,7 @@ export function App() {
   if (sessionStatus === 'checking') {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center text-sm">
-        Connecting to KölnHaus 2027 workspace...
+        {t.connecting}
       </div>
     );
   }
@@ -399,6 +420,8 @@ export function App() {
   if (sessionStatus === 'locked') {
     return (
       <PasswordGate
+        lang={lang}
+        onToggleLang={() => setLang((prev) => (prev === 'de' ? 'en' : 'de'))}
         onUnlocked={() => {
           loadServerState().catch(() => {});
         }}
@@ -420,21 +443,21 @@ export function App() {
                 <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white">
                   KölnHaus 2027{' '}
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 ml-1">
-                    6er-WG Hub • 5 Working + 1 Student
+                    {t.badge}
                   </span>
                 </h1>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Target: Move-in Summer 2027 • Cologne Rent / Buy / ZVG / Syndikat • {lastSyncedAt}
+                {t.subtitle} • {lastSyncedAt}
               </p>
             </div>
           </div>
 
-          {/* Roommate Profile Switcher (No login required!) */}
+          {/* Roommate Profile Switcher + Language Toggle */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5">
               <Users className="w-4 h-4 text-sky-400" />
-              <span className="text-xs text-slate-400">Active User:</span>
+              <span className="text-xs text-slate-400">{t.activeUser}</span>
               <select
                 value={activeRoommateId}
                 onChange={(e) => setActiveRoommateId(e.target.value)}
@@ -442,7 +465,7 @@ export function App() {
               >
                 {INITIAL_ROOMMATES.map((rm) => (
                   <option key={rm.id} value={rm.id} className="bg-slate-900 text-white">
-                    {rm.name} ({rm.role})
+                    {rm.name} ({rm.role === 'Student' ? t.roleStudent : t.roleWorking})
                   </option>
                 ))}
               </select>
@@ -451,13 +474,33 @@ export function App() {
             <span
               className={`px-2.5 py-1 rounded-lg border text-[11px] font-medium ${activeRoommate.badgeColor}`}
             >
-              Commute target: {activeRoommate.destinationName} (≤{activeRoommate.maxCommuteMins}m)
+              {t.commuteTarget} {activeRoommate.destinationName} (≤{activeRoommate.maxCommuteMins}m)
             </span>
+
+            {/* DE / EN Language Toggle */}
+            <div className="inline-flex bg-slate-900 border border-slate-800 rounded-xl p-0.5 text-[11px] font-semibold">
+              <button
+                onClick={() => setLang('de')}
+                className={`px-2.5 py-1 rounded-lg transition ${
+                  lang === 'de' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                🇩🇪 DE
+              </button>
+              <button
+                onClick={() => setLang('en')}
+                className={`px-2.5 py-1 rounded-lg transition ${
+                  lang === 'en' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                🇬🇧 EN
+              </button>
+            </div>
 
             {serverMode && (
               <div className="flex items-center gap-1.5">
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-medium">
-                  <Cloud className="w-3.5 h-3.5" /> Live Sync
+                  <Cloud className="w-3.5 h-3.5" /> {t.liveSync}
                 </span>
                 <button
                   onClick={() => {
@@ -467,7 +510,7 @@ export function App() {
                   }}
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] border border-slate-700"
                 >
-                  <Lock className="w-3 h-3" /> Lock
+                  <Lock className="w-3 h-3" /> {t.lock}
                 </button>
               </div>
             )}
@@ -511,6 +554,7 @@ export function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
         {activeTab === 'screener' && (
           <ScreenerTab
+            lang={lang}
             listings={listings}
             roommates={INITIAL_ROOMMATES}
             activeRoommateId={activeRoommateId}
@@ -533,6 +577,7 @@ export function App() {
 
         {activeTab === 'todos' && (
           <TodoTab
+            lang={lang}
             todos={todos}
             listings={listings}
             roommates={INITIAL_ROOMMATES}
@@ -545,6 +590,7 @@ export function App() {
 
         {activeTab === 'loans' && (
           <LoanCalculatorTab
+            lang={lang}
             listings={listings}
             roommates={INITIAL_ROOMMATES}
             loanProviders={LOAN_PROVIDERS}
@@ -553,10 +599,11 @@ export function App() {
           />
         )}
 
-        {activeTab === 'syndikat' && <SyndikatTab resources={SYNDIKAT_RESOURCES} />}
+        {activeTab === 'syndikat' && <SyndikatTab lang={lang} resources={SYNDIKAT_RESOURCES} />}
 
         {activeTab === 'outreach' && (
           <OutreachTab
+            lang={lang}
             listings={listings}
             roommates={INITIAL_ROOMMATES}
             selectedPropertyId={selectedPropertyForTool}
@@ -566,6 +613,7 @@ export function App() {
 
         {activeTab === 'portals' && (
           <PortalsAlertsTab
+            lang={lang}
             portals={portals}
             alertConfig={alertConfig}
             onUpdateAlertConfig={(patch) =>
